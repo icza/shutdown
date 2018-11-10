@@ -17,11 +17,8 @@ in the main() function before returning.
 Example app using it
 
 	func main() {
-		// Example goroutine that initiates manual shutdown (after 10 seconds)
-		go func() {
-			time.Sleep(10 * time.Second)
-			shutdown.InitiateManual()
-		}()
+		// Initiate a manual shutdown if we're still running after 10 sec
+		time.AfterFunc(10*time.Second, shutdown.InitiateManual)
 
 		// Example worker goroutine whose completion we will wait for.
 		shutdown.Wg.Add(1)
