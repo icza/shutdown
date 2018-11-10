@@ -11,9 +11,9 @@ It publishes a single, shared shutdown channel which is closed when shutdown
 is about to happen. Modules (goroutines) should monitor this channel
 using a `select` statement, and terminate ASAP if it is (gets) closed.
 
-It also publishes a `WaitGroup` that goroutines may use to "register" themselves
+It also publishes a `WaitGroup` goroutines may use to "register" themselves
 should they wish to be patiently waited for and not get terminated abruptly.
-For this to "work", this shared `WaitGroup` should (must) be "waited" for
+For this to "work", this shared `WaitGroup` must be "waited for"
 in the `main()` function before returning.
 
 Example app using it
