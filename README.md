@@ -1,5 +1,7 @@
 # shutdown
 
+[![GoDoc](https://godoc.org/github.com/icza/shutdown?status.svg)](https://godoc.org/github.com/icza/shutdown)
+
 Package shutdown aids graceful termination of goroutines on app shutdown.
 
 It listens for SIGTERM and SIGINT signals, and also provides a manual
