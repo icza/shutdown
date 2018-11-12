@@ -18,7 +18,7 @@ in the main() function before returning.
 
 Simple example
 
-Example #1: If you just want to do something before shutting down:
+If you just want to do something before shutting down:
 
 	func main() {
 		go func() {
@@ -40,7 +40,7 @@ main() function returns.
 
 Advanced example
 
-Example #2: A more advanced example where a worker goroutine is to be waited for.
+A more advanced example where a worker goroutine is to be waited for.
 This app also self-terminates after 10 seconds:
 
 	func main() {
@@ -81,9 +81,9 @@ This app also self-terminates after 10 seconds:
 		shutdown.Wg.Wait()
 	}
 
-Advanced example (variant)
+Advanced example variant
 
-Example #3: Note that the above worker goroutine does not guarantee that it won't start execution
+Note that the above worker goroutine does not guarantee that it won't start execution
 of a new job after a shutdown has been initiated (because select chooses a "ready" case
 pseudo-randomly). If you need guarantee that no new jobs are taken after a shutdown initiation,
 you may check the shutdown channel first, in a separate select in a non-blocking way,
@@ -112,7 +112,7 @@ or you may simply add the check as the loop condition like this:
 
 Web server example
 
-Example #4: The following example starts a web server and provides graceful shutdown for it.
+The following example starts a web server and provides graceful shutdown for it.
 It also handles abnormal (and slient) termination, in which case it triggers a
 manual shutdown, making sure the whole app gets terminated (not just its web server):
 
