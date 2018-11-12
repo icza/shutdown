@@ -2,13 +2,13 @@
 
 Package shutdown aids graceful termination of goroutines on app shutdown.
 
-It listens for SIGTERM and SIGINT signals, and also provides a manual
-way to trigger shutdown.
+It listens for SIGTERM (e.g. kill command) and SIGINT (e.g. CTRL+C) signals,
+and also provides a manual way to trigger shutdown.
 
 It publishes a single, shared shutdown channel which is closed when shutdown
 is about to happen. Modules (goroutines) should monitor this channel
 using a select statement, and terminate ASAP if it is (gets) closed. Additionally,
-there is an `Initiated()` function which returns if a shutdown has been initiated, which
+there is an `Initiated()` function which tells if a shutdown has been initiated, which
 basically checks the shared channel in a non-blocking way.
 
 It also publishes a WaitGroup goroutines may use to "register" themselves
@@ -16,7 +16,29 @@ should they wish to be patiently waited for and not get terminated abruptly.
 For this to "work", this shared WaitGroup must be "waited for"
 in the main() function before returning.
 
-Example app using it
+Examples
+
+If you just want to do something before shutting down:
+
+	func main() {
+		go func() {
+			// This is your app:
+			for {
+				log.Println("Tick...")
+				time.Sleep(time.Second)
+			}
+		}()
+
+		<-shutdown.C
+
+		log.Println("Doing this before shutting down.")
+	}
+
+Note that monitoring the shutdown channel must be on the main goroutine and your
+task in another one (and not vice versa), because the app terminates when the
+main() function returns.
+
+A more advanced example where a worker goroutine is to be waited for:
 
 	func main() {
 		// Initiate a manual shutdown if we're still running after 10 sec
@@ -55,6 +77,33 @@ Example app using it
 		// Wait for "important" goroutines
 		shutdown.Wg.Wait()
 	}
+
+Note that the above worker goroutine does not guarantee that it won't start execution
+of a new job after a shutdown has been initiated (because select chooses a "ready" case
+pseudo-randomly). If you need guarantee that no new jobs are taken after a shutdown initiation,
+you may check the shutdown channel first, in a separate select in a non-blocking way,
+or you may simply add the check as the loop condition like this:
+
+	// Example worker goroutine whose completion we will wait for.
+	shutdown.Wg.Add(1)
+	go func() {
+		defer shutdown.Wg.Done()
+		defer func() {
+			log.Println("[worker] Aborting. Saving progress...")
+			time.Sleep(time.Second) // Simulate work...
+			log.Println("[worker] Save complete.")
+		}()
+		for !shutdown.Initiated() {
+			// Receive jobs, listen for shutdown:
+			select {
+			case jobID := <-jobCh:
+				log.Printf("[worker] Doing job #%d...", jobID)
+				time.Sleep(time.Second) // Simulate work...
+			case <-shutdown.C:
+				return
+			}
+		}
+	}()
 
 */
 package shutdown
