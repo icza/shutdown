@@ -8,7 +8,7 @@ and also provides a manual way to trigger shutdown.
 It publishes a single, shared shutdown channel which is closed when shutdown
 is about to happen. Modules (goroutines) should monitor this channel
 using a select statement, and terminate ASAP if it is (gets) closed. Additionally,
-there is an `Initiated()` function which tells if a shutdown has been initiated, which
+there is an Initiated() function which tells if a shutdown has been initiated, which
 basically checks the shared channel in a non-blocking way.
 
 It also publishes a WaitGroup goroutines may use to "register" themselves
@@ -79,7 +79,7 @@ This app also self-terminates after 10 seconds:
 		shutdown.Wg.Wait()
 	}
 
-Note that the above worker goroutine does not guarantee that it won't start execution
+Example #3: Note that the above worker goroutine does not guarantee that it won't start execution
 of a new job after a shutdown has been initiated (because select chooses a "ready" case
 pseudo-randomly). If you need guarantee that no new jobs are taken after a shutdown initiation,
 you may check the shutdown channel first, in a separate select in a non-blocking way,

@@ -82,6 +82,7 @@ A more advanced example where a worker goroutine is to be waited for. This app a
 		shutdown.Wg.Wait()
 	}
 
+[Example #3](https://github.com/icza/shutdown/blob/master/_examples/example3.go):
 Note that the above worker goroutine does not guarantee that it won't start execution
 of a new job after a shutdown has been initiated (because `select` chooses a "ready" `case`
 pseudo-randomly). If you need guarantee that no new jobs are taken after a shutdown initiation,
