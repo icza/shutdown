@@ -18,6 +18,8 @@ in the main() function before returning.
 
 Examples
 
+Simple example
+
 Example #1: If you just want to do something before shutting down:
 
 	func main() {
@@ -37,6 +39,8 @@ Example #1: If you just want to do something before shutting down:
 Note that monitoring the shutdown channel must be on the main goroutine and your
 task in another one (and not the other way), because the app terminates when the
 main() function returns.
+
+Advanced example
 
 Example #2: A more advanced example where a worker goroutine is to be waited for.
 This app also self-terminates after 10 seconds:
@@ -79,6 +83,8 @@ This app also self-terminates after 10 seconds:
 		shutdown.Wg.Wait()
 	}
 
+Advanced example (variant)
+
 Example #3: Note that the above worker goroutine does not guarantee that it won't start execution
 of a new job after a shutdown has been initiated (because select chooses a "ready" case
 pseudo-randomly). If you need guarantee that no new jobs are taken after a shutdown initiation,
@@ -105,6 +111,54 @@ or you may simply add the check as the loop condition like this:
 			}
 		}
 	}()
+
+Web server example
+
+Example #4: The following example starts a web server and provides graceful shutdown for it:
+
+	func main() {
+		helloFunc := func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("hello"))
+		}
+		srv := &http.Server{
+			Addr:    ":8080",
+			Handler: http.HandlerFunc(helloFunc),
+		}
+
+		go func() {
+			if err := srv.ListenAndServe(); err != nil {
+				if err == http.ErrServerClosed {
+					log.Println("HTTP Server gracefully shut down.")
+					return
+				}
+				log.Printf("Abnormal HTTP Server shut down with error: %v", err)
+			} else {
+				log.Println("HTTP Server SILENTLY shut down.")
+			}
+
+			// If we got to this point, that's not normal:
+			log.Println("Initiating manual system shutdown:")
+			shutdown.InitiateManual()
+		}()
+
+		// Wait for a shutdown event (either signal or manual)
+		<-shutdown.C
+
+		log.Println("Stopping HTTP server (system shutdown)...")
+
+		// Shutdown gracefully, but wait no longer than 20 seconds:
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+		err := srv.Shutdown(ctx)
+		cancel() // Call cancel to release resources of the context
+
+		if err != nil {
+			log.Printf("Failed to shut down HTTP server gracefully: %v", err)
+			// Try forceful shutdown:
+			if err := srv.Close(); err != nil {
+				log.Printf("HTTP server forceful shutdown error: %v", err)
+			}
+		}
+	}
 
 */
 package shutdown
