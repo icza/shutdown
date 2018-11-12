@@ -22,21 +22,29 @@ Example app using it
 		// Initiate a manual shutdown if we're still running after 10 sec
 		time.AfterFunc(10*time.Second, shutdown.InitiateManual)
 
+		// Example generator (job producer)
+		jobCh := make(chan int)
+		go func() {
+			for i := 0; ; i++ {
+				jobCh <- i
+			}
+		}()
+
 		// Example worker goroutine whose completion we will wait for.
 		shutdown.Wg.Add(1)
 		go func() {
 			defer shutdown.Wg.Done()
-			for i := 0; ; i++ {
-				log.Printf("[worker] Doing task #%d...", i)
-				time.Sleep(time.Second) // Simulate work...
-				// Check for shutdown event
+			for {
+				// Receive jobs, listen for shutdown:
 				select {
+				case jobID := <-jobCh:
+					log.Printf("[worker] Doing job #%d...", jobID)
+					time.Sleep(time.Second) // Simulate work...
 				case <-shutdown.C:
-					log.Println("[worker] Aborting; first saving progress (1 sec)...")
-					time.Sleep(time.Second)
+					log.Println("[worker] Aborting. Saving progress...")
+					time.Sleep(time.Second) // Simulate work...
 					log.Println("[worker] Save complete.")
 					return
-				default:
 				}
 			}
 		}()
@@ -101,7 +109,7 @@ func InitiateManual() {
 	}
 }
 
-// Initiated tells if a shutdown has been initiated, either by a signal or a manual.
+// Initiated tells if a shutdown has been initiated, either by a signal or manually.
 func Initiated() bool {
 	select {
 	case <-c:
