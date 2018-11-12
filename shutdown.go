@@ -18,7 +18,7 @@ in the main() function before returning.
 
 Examples
 
-If you just want to do something before shutting down:
+Example #1: If you just want to do something before shutting down:
 
 	func main() {
 		go func() {
@@ -35,10 +35,11 @@ If you just want to do something before shutting down:
 	}
 
 Note that monitoring the shutdown channel must be on the main goroutine and your
-task in another one (and not vice versa), because the app terminates when the
+task in another one (and not the other way), because the app terminates when the
 main() function returns.
 
-A more advanced example where a worker goroutine is to be waited for:
+Example #2: A more advanced example where a worker goroutine is to be waited for.
+This app also self-terminates after 10 seconds:
 
 	func main() {
 		// Initiate a manual shutdown if we're still running after 10 sec

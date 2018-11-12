@@ -20,6 +20,7 @@ in the `main()` function before returning.
 
 ## Examples
 
+[Example #1](https://github.com/icza/shutdown/blob/master/_examples/example1.go):
 If you just want to do something before shutting down:
 
 	func main() {
@@ -36,11 +37,12 @@ If you just want to do something before shutting down:
 		log.Println("Doing this before shutting down.")
 	}
 
-Note that monitoring the shutdown channel must be on the main goroutine and your
-task in another one (and not vice versa), because the app terminates when the
+Note that monitoring the shutdown channel must be on the `main` goroutine and your
+task in another one (and the other way), because the app terminates when the
 `main()` function returns.
 
-A more advanced example where a worker goroutine is to be waited for:
+[Example #2](https://github.com/icza/shutdown/blob/master/_examples/example2.go):
+A more advanced example where a worker goroutine is to be waited for. This app also self-terminates after 10 seconds:
 
 	func main() {
 		// Initiate a manual shutdown if we're still running after 10 sec
