@@ -39,8 +39,8 @@ If you just want to do something before shutting down:
 		log.Println("Doing this before shutting down.")
 	}
 
-Note that monitoring the shutdown channel must be on the `main` goroutine and your
-task in another one (and the other way), because the app terminates when the
+Note that monitoring the shutdown channel must be in the `main` goroutine and your
+task in another one (and not the other way), because the app terminates when the
 `main()` function returns.
 
 ### Advanced example
