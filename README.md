@@ -119,7 +119,9 @@ or you may simply add the check as the loop condition like this:
 ### Web server example
 
 [Example #4](https://github.com/icza/shutdown/blob/master/_examples/example4.go):
-The following example starts a web server and provides graceful shutdown for it:
+The following example starts a web server and provides graceful shutdown for it.
+It also handles abnormal (and slient) termination, in which case it triggers a
+manual shutdown, making sure the whole app gets terminated (not just its web server):
 
 	func main() {
 		helloFunc := func(w http.ResponseWriter, r *http.Request) {
