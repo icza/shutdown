@@ -1,6 +1,6 @@
 /*
 
-Package shutdown aids graceful termination of goroutines on app shutdown.
+Package shutdown helps controlling app shutdown and graceful termination of goroutines.
 
 It listens for SIGTERM (e.g. kill command) and SIGINT (e.g. CTRL+C) signals,
 and also provides a manual way to trigger shutdown.
