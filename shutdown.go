@@ -16,8 +16,6 @@ should they wish to be patiently waited for and not get terminated abruptly.
 For this to "work", this shared WaitGroup must be "waited for"
 in the main() function before returning.
 
-Examples
-
 Simple example
 
 Example #1: If you just want to do something before shutting down:
