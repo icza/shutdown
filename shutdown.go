@@ -7,7 +7,9 @@ way to trigger shutdown.
 
 It publishes a single, shared shutdown channel which is closed when shutdown
 is about to happen. Modules (goroutines) should monitor this channel
-using a select statement, and terminate ASAP if it is (gets) closed.
+using a select statement, and terminate ASAP if it is (gets) closed. Additionally,
+there is an `Initiated()` function which returns if a shutdown has been initiated, which
+basically checks the shared channel, in a non-blocking way.
 
 It also publishes a WaitGroup goroutines may use to "register" themselves
 should they wish to be patiently waited for and not get terminated abruptly.
@@ -97,4 +99,14 @@ func InitiateManual() {
 	case sigch <- syscall.SIGTERM:
 	default:
 	}
+}
+
+// Initiated tells if a shutdown has been initiated, either by a signal or a manual.
+func Initiated() bool {
+	select {
+	case <-c:
+		return true
+	default:
+	}
+	return false
 }
