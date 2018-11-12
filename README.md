@@ -57,3 +57,30 @@ Example app using it
 		// Wait for "important" goroutines
 		shutdown.Wg.Wait()
 	}
+
+Note that the above worker goroutine does not guarantee that it won't start execution
+of a new job after a shutdown has been initiated (because `select` chooses a "ready" `case`
+pseudo-randomly). If you need guarantee that no new jobs are taken after a shutdown initiation,
+you may check the shutdown channel first, in a separate `select` in a non-blocking way,
+or you may simply add the check as the loop condition like this:
+
+	// Example worker goroutine whose completion we will wait for.
+	shutdown.Wg.Add(1)
+	go func() {
+		defer shutdown.Wg.Done()
+		defer func() {
+			log.Println("[worker] Aborting. Saving progress...")
+			time.Sleep(time.Second) // Simulate work...
+			log.Println("[worker] Save complete.")
+		}()
+		for !shutdown.Initiated() {
+			// Receive jobs, listen for shutdown:
+			select {
+			case jobID := <-jobCh:
+				log.Printf("[worker] Doing job #%d...", jobID)
+				time.Sleep(time.Second) // Simulate work...
+			case <-shutdown.C:
+				return
+			}
+		}
+	}()
