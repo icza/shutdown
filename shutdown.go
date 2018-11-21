@@ -115,7 +115,7 @@ or you may simply add the check as the loop condition like this:
 Web server example
 
 The following example starts a web server and provides graceful shutdown for it.
-It also handles abnormal (and slient) termination, in which case it triggers a
+It also handles abnormal (and silent) termination, in which case it triggers a
 manual shutdown, making sure the whole app gets terminated (not just its web server):
 
 	func main() {
