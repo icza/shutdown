@@ -1,5 +1,4 @@
 /*
-
 Package shutdown helps controlling app shutdown and graceful termination of goroutines.
 
 It listens for SIGTERM (e.g. kill command) and SIGINT (e.g. CTRL+C) signals,
@@ -11,12 +10,15 @@ using a select statement, and terminate ASAP if it is (gets) closed. Additionall
 there is an Initiated() function which tells if a shutdown has been initiated, which
 basically checks the shared channel in a non-blocking way.
 
+A context.Context is also published which will be cancelled when shutdown is about to happen.
+Background tasks requiring a context may use this directly or as a parent context.
+
 It also publishes a WaitGroup goroutines may use to "register" themselves
 should they wish to be patiently waited for and not get terminated abruptly.
 For this to "work", this shared WaitGroup must be "waited for"
 in the main() function before returning.
 
-Simple example
+# Simple example
 
 If you just want to do something before shutting down:
 
@@ -38,7 +40,7 @@ Note that monitoring the shutdown channel must be in the main goroutine and your
 task in another one (and not the other way), because the app terminates when the
 main() function returns.
 
-Advanced example
+# Advanced example
 
 A more advanced example where a worker goroutine is to be waited for.
 This app also self-terminates after 10 seconds:
@@ -85,7 +87,7 @@ Note that the above worker goroutine does not guarantee that it won't start exec
 of a new job after a shutdown has been initiated (because select chooses a "ready" case
 pseudo-randomly).
 
-Advanced example variant
+# Advanced example variant
 
 If you need guarantee that no new jobs are taken after a shutdown initiation,
 you may check the shutdown channel first, in a separate select in a non-blocking way,
@@ -112,7 +114,7 @@ or you may simply add the check as the loop condition like this:
 		}
 	}()
 
-Web server example
+# Web server example
 
 The following example starts a web server and provides graceful shutdown for it.
 It also handles abnormal (and silent) termination, in which case it triggers a
@@ -162,10 +164,37 @@ manual shutdown, making sure the whole app gets terminated (not just its web ser
 		}
 	}
 
+# Context example with background worker
+
+The following example launches a background worker doing something that uses / requires a context.
+
+	func main() {
+		// Worker goroutine requiring a context (we'll wait for its completion).
+		shutdown.Wg.Add(1)
+		go func() {
+			defer shutdown.Wg.Done()
+			ctx := shutdown.Context
+			for !shutdown.Initiated() {
+				result, err := dbAdapter.RunQuery(ctx, "some-query")
+				if err != nil {
+					log.Printf("Query error: %v", err)
+				} else {
+					log.Printf("Query result: %v", result)
+				}
+			}
+		}()
+
+		// Wait for a shutdown event (either signal or manual)
+		<-shutdown.C
+
+		// Wait for the worker to finish
+		shutdown.Wg.Wait()
+	}
 */
 package shutdown
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -177,17 +206,19 @@ var (
 	// sigch is a signal channel used to receive SIGTERM and SIGINT (CTRL+C).
 	// Buffered to make sure we don't miss it (send on it is non-blocking).
 	sigch = make(chan os.Signal, 1)
-
-	// c is the internal, bidirectional channel
-	c = make(chan struct{})
 )
 
-// C is the shutdown channel.
-var C <-chan struct{} = c
+var (
+	// Context's channel is cancelled on shutdown
+	Context, cancel = context.WithCancel(context.Background())
 
-// Wg is the shared WaitGroup goroutines may use to "register" themselves
-// if they wish to be waited for on app shutdown.
-var Wg = &sync.WaitGroup{}
+	// C is the shutdown channel.
+	C <-chan struct{} = Context.Done()
+
+	// Wg is the shared WaitGroup goroutines may use to "register" themselves
+	// if they wish to be waited for on app shutdown.
+	Wg = &sync.WaitGroup{}
+)
 
 func init() {
 	// Register sigch for SIGTERM and SIGINT.
@@ -200,7 +231,7 @@ func init() {
 		// We only subscribed to signals to which we have to shutdown
 		log.Printf("Received '%v' signal, broadcasting shutdown...", s)
 
-		close(c)
+		cancel()
 	}()
 }
 
@@ -218,7 +249,7 @@ func InitiateManual() {
 // Initiated tells if a shutdown has been initiated, either by a signal or manually.
 func Initiated() bool {
 	select {
-	case <-c:
+	case <-C:
 		return true
 	default:
 	}

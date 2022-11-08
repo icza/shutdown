@@ -1,6 +1,6 @@
 # shutdown
 
-[![GoDoc](https://godoc.org/github.com/icza/shutdown?status.svg)](https://godoc.org/github.com/icza/shutdown)
+[![Go Reference](https://pkg.go.dev/badge/github.com/icza/shutdown.svg)](https://pkg.go.dev/github.com/icza/shutdown)
 
 Package shutdown helps controlling app shutdown and graceful termination of goroutines.
 
@@ -12,6 +12,9 @@ is about to happen. Modules (goroutines) should monitor this channel
 using a `select` statement, and terminate ASAP if it is (gets) closed. Additionally,
 there is an `Initiated()` function which tells if a shutdown has been initiated, which
 basically checks the shared channel in a non-blocking way.
+
+A `context.Context` is also published which will be cancelled when shutdown is about to happen.
+Background tasks requiring a context may use this directly or as a parent context.
 
 It also publishes a `WaitGroup` goroutines may use to "register" themselves
 should they wish to be patiently waited for and not get terminated abruptly.
@@ -167,4 +170,32 @@ manual shutdown, making sure the whole app gets terminated (not just its web ser
 				log.Printf("HTTP server forceful shutdown error: %v", err)
 			}
 		}
+	}
+
+### Context example with background worker
+
+[Example #5](https://github.com/icza/shutdown/blob/master/_examples/example5.go):
+The following example launches a background worker doing something that uses / requires a context.
+
+	func main() {
+		// Worker goroutine requiring a context (we'll wait for its completion).
+		shutdown.Wg.Add(1)
+		go func() {
+			defer shutdown.Wg.Done()
+			ctx := shutdown.Context
+			for !shutdown.Initiated() {
+				result, err := dbAdapter.RunQuery(ctx, "some-query")
+				if err != nil {
+					log.Printf("Query error: %v", err)
+				} else {
+					log.Printf("Query result: %v", result)
+				}
+			}
+		}()
+
+		// Wait for a shutdown event (either signal or manual)
+		<-shutdown.C
+
+		// Wait for the worker to finish
+		shutdown.Wg.Wait()
 	}
