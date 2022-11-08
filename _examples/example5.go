@@ -32,11 +32,13 @@ func main() {
 	shutdown.Wg.Wait()
 }
 
+var dbAdapter = &mockDB{}
+
 type mockDB struct {
 	count int
 }
 
-func (db *mockDB) RunQuery(ctx context.Context, query string) (result any, err error) {
+func (db *mockDB) RunQuery(ctx context.Context, query string) (result interface{}, err error) {
 	// Simulate work
 	select {
 	case <-time.After(time.Second):
@@ -47,5 +49,3 @@ func (db *mockDB) RunQuery(ctx context.Context, query string) (result any, err e
 	db.count++
 	return fmt.Sprint("count:", db.count), nil
 }
-
-var dbAdapter = &mockDB{}
