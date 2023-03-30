@@ -1,5 +1,6 @@
 # shutdown
 
+![Build Status](https://github.com/icza/shutdown/actions/workflows/go.yml/badge.svg)
 [![Go Reference](https://pkg.go.dev/badge/github.com/icza/shutdown.svg)](https://pkg.go.dev/github.com/icza/shutdown)
 
 Package shutdown helps controlling app shutdown and graceful termination of goroutines.
